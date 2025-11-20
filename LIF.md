@@ -305,6 +305,7 @@ The objects contained in this structure are described in more detail below.
 | *maximumAllowedDeviation* | meter | float64 | Maximum *maximumAllowedDeviation* |
 | *loadRestriction* |  | JSON-object | Describes the load restriction on this node for each vehicle type ID in vehicleTypeIds.  Note: If not defined, the node can be used by both unloaded vehicles and loaded vehicles carrying any load set. |
 | *actions[action]* |  | array of JSON-object | Holds actions that can be integrated into an order by the third-party master control system can send for the given vehicle types on this node.  The selection of which action to integrate is determined by the third-party master control system. If no actions are applicable, this attribute may be omitted. |
+| *allowedDeviationXY* |  | JSON-object | Indicates the deviation a vehicle needs for a node to traverse it smoothly. |
 | } |  |  |  |
 
 ### 8.3.7 LoadRestriction
@@ -340,7 +341,17 @@ The mobile robot fact sheet may define actions that can be taken nearly anywhere
 | value |  | One of: array, boolean, number, string, object | The value of the parameter that belongs to the key.  Note: The data type is defined in the mobile robot VDA5050 factsheet. |
 | } |  |  |  |
 
-### 8.3.10 Edge
+### 8.3.10 AllowedDeviationXY
+
+| Object structure | Unit | Data type | Description |
+| --- | --- | --- | --- |
+| allowedDeviationXY { |  | JSON-object |  |
+| a | meter | float64 | length of the ellipse semi-major axis in meters. |
+| b | meter | float64 | length of the ellipse semi-minor axis in meters. |
+| theta |  | float64 | rotation angle (the angle from the positive horizontal axis to the ellipse's major axis inside the project-specific coordinate system). |
+| } |  |  |  |
+
+### 8.3.11 Edge
 
 | Object structure | Unit | Data type | Description |
 | --- | --- | --- | --- |
@@ -353,7 +364,7 @@ The mobile robot fact sheet may define actions that can be taken nearly anywhere
 | vehicleTypeEdgeProperties [vehicleTypeEdgeProperty] |  | array of JSON-object | Vehicle type specific properties for this edge.  Note: This attribute must not be empty. For each allowed vehicle type there must be an element. |
 | } |  |  |  |
 
-### 8.3.11 VehicleTypeEdgeProperty
+### 8.3.12 VehicleTypeEdgeProperty
 
 | Object Structure | Unit | Data type | Description |
 | --- | --- | --- | --- |
@@ -373,14 +384,13 @@ The mobile robot fact sheet may define actions that can be taken nearly anywhere
 | *trajectory* |  | JSON-object | Trajectory JSON-object for this edge as a NURBS. Defines the curve on which the vehicle should move between startNode and endNode. Can be omitted if the vehicle cannot process trajectories or if the vehicle plans its own trajectory.  Note: The trajectory is not required, but if it is not provided, the (third-party) master control system may not have sufficient information to be responsible for determining whether different vehicles from the same or different manufacturers would collide.  Note: This object must be used mutually exclusively with the physicalLineGuidedProperty object. |
 | *physicalLineGuidedProperty* |  | JSON-object | JSON-object for simple or limited vehicle types which are unable to process or respect trajectories and are dependent upon the information defined within this object.  Note: This object must be used mutually exclusively with the trajectory object. |
 | *reentryAllowed* |  | boolean | "true": Vehicles of a type listed in vehicleTypeIds are allowed to enter automatic management by the third-party master control system while on this edge.  "false": Vehicles of a type listed in vehicleTypeIds are not allowed to enter into automatic management by the (third-party) master control system while on this edge.  Note: If not defined, the default is true. |
-| *allowedDeviationXY* |  | JSON-object | Indicates the deviation a vehicle needs for a node to traverse it smoothly. |
 | } |  |  |  |
 
-#### 8.3.11.1 Rotation Allowed at Start and End
+#### 8.3.12.1 Rotation Allowed at Start and End
 
 Two attributes, rotationAtEndNodeAllowed and rotationAtStartNodeAllowed, may contradict one another if they terminate and originate, respectively, at the same node. In such cases, these should be combined as per a boolean *and*. As an example, if the end node rotation is BOTH on the terminating edge, but NONE on the originating edge, this would be interpreted as NONE. For directional rotation values of CW or CCW, they must also align exactly, or value of CW or CCW on the terminating edge but BOTH on the originating edge would also only allow CW or CCW rotation, respectively. If these two attributes do not align at such a node, some edges of the layout may be unnavigable depending upon how the vehicle arrived at the node (which may or may not be intentional).
 
-### 8.3.12 Trajectory
+### 8.3.13 Trajectory
 
 | Object structure | Unit | Data type | Description |
 | --- | --- | --- | --- |
@@ -390,7 +400,7 @@ Two attributes, rotationAtEndNodeAllowed and rotationAtStartNodeAllowed, may con
 | controlPoints[controlPoint] |  | array of JSON-object | List of JSON controlPoint JSON-objects defining the control points of the NURBS, which includes the beginning and end point. |
 | } |  |  |  |
 
-### 8.3.13 ControlPoint
+### 8.3.14 ControlPoint
 
 | Object structure | Unit | Data type | Description |
 | --- | --- | --- | --- |
@@ -400,7 +410,7 @@ Two attributes, rotationAtEndNodeAllowed and rotationAtStartNodeAllowed, may con
 | *weight* |  | float64 | Range: [0.0 ... float64.max]  The weight with which this control point pulls on the curve. When not defined, the default is 1.0. |
 | } |  |  |  |
 
-### 8.3.14 PhysicalLineGuidedProperty
+### 8.3.15 PhysicalLineGuidedProperty
 
 | Object structure | Unit | Data type | Description |
 | --- | --- | --- | --- |
@@ -409,7 +419,7 @@ Two attributes, rotationAtEndNodeAllowed and rotationAtStartNodeAllowed, may con
 | *length* | meter | float64 | The length of this edge for vehicle types which require it but are unable to process or respect trajectories. |
 | } |  |  |  |
 
-### 8.3.15 Station
+### 8.3.16 Station
 
 | Object structure | Unit | Data type | Description |
 | --- | --- | --- | --- |
@@ -426,7 +436,7 @@ Two attributes, rotationAtEndNodeAllowed and rotationAtStartNodeAllowed, may con
 | *}* |  |  |  |
 | } |  |  |  |
 
-#### 8.3.15.1 Best Practices for Defining a Station
+#### 8.3.16.1 Best Practices for Defining a Station
 
 A station could be a battery charting point where a vehicle must interface with a physical charging infrastructure. A station could be a place to drop a single load. A station could represent a racking bay where multiple loads could be stored next to one another, especially in cases where loads of variable widths may affect how many loads are able to be stored on such a station.
 
@@ -438,19 +448,9 @@ An additional example would be a last in first out (LIFO) 1xNx1 variable deep la
 
 The exact configuration of the above and other more complex situations must always be handled on a case-by-case basis between the (third-party) master control system and the vehicle integrator(s).
 
-#### 8.3.15.2 How the (Third-party) Master Control System Can Identify the Purpose of a Station
+#### 8.3.16.2 How the (Third-party) Master Control System Can Identify the Purpose of a Station
 
 If the (third-party) master control system would need to graphically identify certain stations, or would need to filter on a list of stations for human interaction purposes, the purpose of a station is entirely defined by the actions available on its interaction nodes. Every station that represents a charging area, for instance, should have a corresponding charging action, as defined in the mobile robot fact sheet, on its interaction node. Stations that can have multiple purposes, such as both emergency evacuation and maintenance, could be represented by two overlapping stations, or one station with multiple actions on one or more interaction nodes, or one combined action defined in the mobile robot fact sheet, and so forth.
-
-### 8.3.16 AllowedDeviationXY
-
-| Object structure | Unit | Data type | Description |
-| --- | --- | --- | --- |
-| allowedDeviationXY { |  | JSON-object |  |
-| a | meter | float64 | length of the ellipse semi-major axis in meters. |
-| b | meter | float64 | length of the ellipse semi-minor axis in meters. |
-| theta |  | float64 | rotation angle (the angle from the positive horizontal axis to the ellipse's major axis inside the project-specific coordinate system). |
-| } |  |  |  |
 
 ## 8.4 Complete Data Structure of LIF
 
